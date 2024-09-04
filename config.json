@@ -177,7 +177,7 @@
       "action": "output",
       "args": {
         "outputDir": "./output",
-        "outputName": "geoip.dat"
+        "outputName": "geoip.dat",
         "overwriteList": [
           "cn",
           "private",
