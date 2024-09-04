@@ -178,7 +178,7 @@
       "args": {
         "outputDir": "./output",
         "outputName": "geoip.dat",
-        "overwriteList": [
+        "wantedList": [
           "cn",
           "private",
           "cloudflare",
@@ -241,7 +241,7 @@
       "args": {
         "outputDir": "./output",
         "outputName": "Country.mmdb",
-        "overwriteList": [
+        "wantedList": [
           "cn",
           "private",
           "cloudflare",
