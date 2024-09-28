@@ -171,7 +171,7 @@
       "action": "add"
     }
   ],
-    "output": [
+  "output": [
     {
       "type": "v2rayGeoIPDat",
       "action": "output",
