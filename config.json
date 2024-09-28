@@ -171,6 +171,15 @@
       "action": "add"
     }
   ],
+    "output": [
+    {
+      "type": "v2rayGeoIPDat",
+      "action": "output",
+      "args": {
+        "outputDir": "./output",
+        "outputName": "geoip-full.dat"
+      }
+    },
   "output": [
     {
       "type": "v2rayGeoIPDat",
