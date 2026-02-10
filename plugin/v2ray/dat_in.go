@@ -10,21 +10,20 @@ import (
 	"strings"
 
 	"github.com/Loyalsoldier/geoip/lib"
-	router "github.com/v2fly/v2ray-core/v5/app/router/routercommon"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
-	typeGeoIPdatIn = "v2rayGeoIPDat"
-	descGeoIPdatIn = "Convert V2Ray GeoIP dat to other formats"
+	TypeGeoIPDatIn = "v2rayGeoIPDat"
+	DescGeoIPDatIn = "Convert V2Ray GeoIP dat to other formats"
 )
 
 func init() {
-	lib.RegisterInputConfigCreator(typeGeoIPdatIn, func(action lib.Action, data json.RawMessage) (lib.InputConverter, error) {
+	lib.RegisterInputConfigCreator(TypeGeoIPDatIn, func(action lib.Action, data json.RawMessage) (lib.InputConverter, error) {
 		return newGeoIPDatIn(action, data)
 	})
-	lib.RegisterInputConverter(typeGeoIPdatIn, &geoIPDatIn{
-		Description: descGeoIPdatIn,
+	lib.RegisterInputConverter(TypeGeoIPDatIn, &GeoIPDatIn{
+		Description: DescGeoIPDatIn,
 	})
 }
 
@@ -42,7 +41,7 @@ func newGeoIPDatIn(action lib.Action, data json.RawMessage) (lib.InputConverter,
 	}
 
 	if tmp.URI == "" {
-		return nil, fmt.Errorf("❌ [type %s | action %s] uri must be specified in config", typeGeoIPdatIn, action)
+		return nil, fmt.Errorf("❌ [type %s | action %s] uri must be specified in config", TypeGeoIPDatIn, action)
 	}
 
 	// Filter want list
@@ -53,17 +52,17 @@ func newGeoIPDatIn(action lib.Action, data json.RawMessage) (lib.InputConverter,
 		}
 	}
 
-	return &geoIPDatIn{
-		Type:        typeGeoIPdatIn,
+	return &GeoIPDatIn{
+		Type:        TypeGeoIPDatIn,
 		Action:      action,
-		Description: descGeoIPdatIn,
+		Description: DescGeoIPDatIn,
 		URI:         tmp.URI,
 		Want:        wantList,
 		OnlyIPType:  tmp.OnlyIPType,
 	}, nil
 }
 
-type geoIPDatIn struct {
+type GeoIPDatIn struct {
 	Type        string
 	Action      lib.Action
 	Description string
@@ -72,19 +71,19 @@ type geoIPDatIn struct {
 	OnlyIPType  lib.IPType
 }
 
-func (g *geoIPDatIn) GetType() string {
+func (g *GeoIPDatIn) GetType() string {
 	return g.Type
 }
 
-func (g *geoIPDatIn) GetAction() lib.Action {
+func (g *GeoIPDatIn) GetAction() lib.Action {
 	return g.Action
 }
 
-func (g *geoIPDatIn) GetDescription() string {
+func (g *GeoIPDatIn) GetDescription() string {
 	return g.Description
 }
 
-func (g *geoIPDatIn) Input(container lib.Container) (lib.Container, error) {
+func (g *GeoIPDatIn) Input(container lib.Container) (lib.Container, error) {
 	entries := make(map[string]*lib.Entry)
 	var err error
 
@@ -129,7 +128,7 @@ func (g *geoIPDatIn) Input(container lib.Container) (lib.Container, error) {
 	return container, nil
 }
 
-func (g *geoIPDatIn) walkLocalFile(path string, entries map[string]*lib.Entry) error {
+func (g *GeoIPDatIn) walkLocalFile(path string, entries map[string]*lib.Entry) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -143,7 +142,7 @@ func (g *geoIPDatIn) walkLocalFile(path string, entries map[string]*lib.Entry) e
 	return nil
 }
 
-func (g *geoIPDatIn) walkRemoteFile(url string, entries map[string]*lib.Entry) error {
+func (g *GeoIPDatIn) walkRemoteFile(url string, entries map[string]*lib.Entry) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -161,13 +160,13 @@ func (g *geoIPDatIn) walkRemoteFile(url string, entries map[string]*lib.Entry) e
 	return nil
 }
 
-func (g *geoIPDatIn) generateEntries(reader io.Reader, entries map[string]*lib.Entry) error {
+func (g *GeoIPDatIn) generateEntries(reader io.Reader, entries map[string]*lib.Entry) error {
 	geoipBytes, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	var geoipList router.GeoIPList
+	var geoipList GeoIPList
 	if err := proto.Unmarshal(geoipBytes, &geoipList); err != nil {
 		return err
 	}

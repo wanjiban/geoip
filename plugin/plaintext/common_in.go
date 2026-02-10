@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type textIn struct {
+type TextIn struct {
 	Type        string
 	Action      lib.Action
 	Description string
@@ -27,18 +27,18 @@ type textIn struct {
 	RemoveSuffixesInLine []string
 }
 
-func (t *textIn) scanFile(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFile(reader io.Reader, entry *lib.Entry) error {
 	var err error
 	switch t.Type {
-	case typeTextIn:
+	case TypeTextIn:
 		err = t.scanFileForTextIn(reader, entry)
-	case typeJSONIn:
+	case TypeJSONIn:
 		err = t.scanFileForJSONIn(reader, entry)
-	case typeClashRuleSetClassicalIn:
+	case TypeClashRuleSetClassicalIn:
 		err = t.scanFileForClashClassicalRuleSetIn(reader, entry)
-	case typeClashRuleSetIPCIDRIn:
+	case TypeClashRuleSetIPCIDRIn:
 		err = t.scanFileForClashIPCIDRRuleSetIn(reader, entry)
-	case typeSurgeRuleSetIn:
+	case TypeSurgeRuleSetIn:
 		err = t.scanFileForSurgeRuleSetIn(reader, entry)
 	default:
 		return lib.ErrNotSupportedFormat
@@ -47,7 +47,7 @@ func (t *textIn) scanFile(reader io.Reader, entry *lib.Entry) error {
 	return err
 }
 
-func (t *textIn) scanFileForTextIn(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFileForTextIn(reader io.Reader, entry *lib.Entry) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -83,7 +83,7 @@ func (t *textIn) scanFileForTextIn(reader io.Reader, entry *lib.Entry) error {
 	return nil
 }
 
-func (t *textIn) readClashRuleSetYAMLFile(reader io.Reader) ([]string, error) {
+func (t *TextIn) readClashRuleSetYAMLFile(reader io.Reader) ([]string, error) {
 	var payload struct {
 		Payload []string `yaml:"payload"`
 	}
@@ -100,7 +100,7 @@ func (t *textIn) readClashRuleSetYAMLFile(reader io.Reader) ([]string, error) {
 	return payload.Payload, nil
 }
 
-func (t *textIn) scanFileForClashIPCIDRRuleSetIn(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFileForClashIPCIDRRuleSetIn(reader io.Reader, entry *lib.Entry) error {
 	payload, err := t.readClashRuleSetYAMLFile(reader)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (t *textIn) scanFileForClashIPCIDRRuleSetIn(reader io.Reader, entry *lib.En
 	return nil
 }
 
-func (t *textIn) scanFileForClashClassicalRuleSetIn(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFileForClashClassicalRuleSetIn(reader io.Reader, entry *lib.Entry) error {
 	payload, err := t.readClashRuleSetYAMLFile(reader)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (t *textIn) scanFileForClashClassicalRuleSetIn(reader io.Reader, entry *lib
 	return nil
 }
 
-func (t *textIn) scanFileForSurgeRuleSetIn(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFileForSurgeRuleSetIn(reader io.Reader, entry *lib.Entry) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -193,7 +193,7 @@ func (t *textIn) scanFileForSurgeRuleSetIn(reader io.Reader, entry *lib.Entry) e
 	return nil
 }
 
-func (t *textIn) scanFileForJSONIn(reader io.Reader, entry *lib.Entry) error {
+func (t *TextIn) scanFileForJSONIn(reader io.Reader, entry *lib.Entry) error {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return err
@@ -209,11 +209,37 @@ func (t *textIn) scanFileForJSONIn(reader io.Reader, entry *lib.Entry) error {
 		path = strings.TrimSpace(path)
 
 		result := gjson.GetBytes(data, path)
-		for _, cidr := range result.Array() {
-			if err := entry.AddPrefix(cidr.String()); err != nil {
+		if err := t.processJSONResult(result, entry); err != nil {
+			return fmt.Errorf("❌ [type %s | action %s] failed to process JSON: %v", t.Type, t.Action, err)
+		}
+	}
+
+	return nil
+}
+
+func (t *TextIn) processJSONResult(result gjson.Result, entry *lib.Entry) error {
+	switch {
+	case !result.Exists():
+		return fmt.Errorf("invaild IP address or CIDR (value not exist), please check your specified JSON path or JSON source")
+
+	case result.Type == gjson.String:
+		cidr := strings.TrimSpace(result.String())
+		if cidr == "" {
+			return fmt.Errorf("empty string, please check your specified JSON path or JSON source")
+		}
+		if err := entry.AddPrefix(cidr); err != nil {
+			return err
+		}
+
+	case result.IsArray():
+		for _, item := range result.Array() {
+			if err := t.processJSONResult(item, entry); err != nil {
 				return err
 			}
 		}
+
+	default:
+		return fmt.Errorf("invaild IP address or CIDR, please check your specified JSON path or JSON source")
 	}
 
 	return nil

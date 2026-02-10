@@ -13,8 +13,7 @@
       "type": "cutter",
       "action": "remove",
       "args": {
-        "wantedList": ["cn"],
-        "onlyIPType": "ipv4"
+        "wantedList": ["cn"]
       }
     },
     {
@@ -42,6 +41,14 @@
         "name": "cn",
         "uri": "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt",
         "onlyIPType": "ipv6"
+      }
+    },
+    {
+      "type": "text",
+      "action": "add",
+      "args": {
+        "name": "tor",
+        "uri": "https://check.torproject.org/torbulkexitlist"
       }
     },
     {
@@ -215,7 +222,8 @@
           "google",
           "netflix",
           "telegram",
-          "twitter"
+          "twitter",
+          "tor"
         ]
       }
     },
@@ -241,9 +249,9 @@
       "args": {
         "outputDir": "./output",
         "outputName": "Country.mmdb",
-        "wantedList": [
+        "sourceMMDBURI": "./output/GeoLite2-Country.mmdb",
+        "overwriteList": [
           "cn",
-          "private",
           "cloudflare",
           "cloudfront",
           "facebook",
@@ -251,7 +259,30 @@
           "google",
           "netflix",
           "telegram",
-          "twitter"
+          "twitter",
+          "tor",
+          "private"
+        ]
+      }
+    },
+    {
+      "type": "maxmindMMDB",
+      "action": "output",
+      "args": {
+        "outputDir": "./output",
+        "outputName": "Country-without-asn.mmdb",
+        "sourceMMDBURI": "./output/GeoLite2-Country.mmdb",
+        "overwriteList": ["cn", "private"],
+        "excludedList": [
+          "cloudflare",
+          "cloudfront",
+          "facebook",
+          "fastly",
+          "google",
+          "netflix",
+          "telegram",
+          "twitter",
+          "tor"
         ]
       }
     },
@@ -261,6 +292,7 @@
       "args": {
         "outputDir": "./output",
         "outputName": "Country-only-cn-private.mmdb",
+        "sourceMMDBURI": "./output/GeoLite2-Country.mmdb",
         "wantedList": ["cn", "private"]
       }
     },
@@ -278,7 +310,8 @@
           "google",
           "netflix",
           "telegram",
-          "twitter"
+          "twitter",
+          "tor"
         ]
       }
     },
@@ -324,10 +357,7 @@
     },
     {
       "type": "surgeRuleSet",
-      "action": "output",
-      "args": {
-        "addSuffixInLine": ",no-resolve"
-      }
+      "action": "output"
     }
   ]
 }

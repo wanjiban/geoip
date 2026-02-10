@@ -5,28 +5,30 @@ import (
 	"errors"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/Loyalsoldier/geoip/lib"
 )
 
 const (
-	typeStdout = "stdout"
-	descStdout = "Convert data to plaintext CIDR format and output to standard output"
+	TypeStdout = "stdout"
+	DescStdout = "Convert data to plaintext CIDR format and output to standard output"
 )
 
 func init() {
-	lib.RegisterOutputConfigCreator(typeStdout, func(action lib.Action, data json.RawMessage) (lib.OutputConverter, error) {
+	lib.RegisterOutputConfigCreator(TypeStdout, func(action lib.Action, data json.RawMessage) (lib.OutputConverter, error) {
 		return newStdout(action, data)
 	})
-	lib.RegisterOutputConverter(typeStdout, &stdout{
-		Description: descStdout,
+	lib.RegisterOutputConverter(TypeStdout, &Stdout{
+		Description: DescStdout,
 	})
 }
 
 func newStdout(action lib.Action, data json.RawMessage) (lib.OutputConverter, error) {
 	var tmp struct {
 		Want       []string   `json:"wantedList"`
+		Exclude    []string   `json:"excludedList"`
 		OnlyIPType lib.IPType `json:"onlyIPType"`
 	}
 
@@ -36,46 +38,41 @@ func newStdout(action lib.Action, data json.RawMessage) (lib.OutputConverter, er
 		}
 	}
 
-	// Filter want list
-	wantList := make(map[string]bool)
-	for _, want := range tmp.Want {
-		if want = strings.ToUpper(strings.TrimSpace(want)); want != "" {
-			wantList[want] = true
-		}
-	}
-
-	return &stdout{
-		Type:        typeStdout,
+	return &Stdout{
+		Type:        TypeStdout,
 		Action:      action,
-		Description: descStdout,
-		Want:        wantList,
+		Description: DescStdout,
+		Want:        tmp.Want,
+		Exclude:     tmp.Exclude,
 		OnlyIPType:  tmp.OnlyIPType,
 	}, nil
 }
 
-type stdout struct {
+type Stdout struct {
 	Type        string
 	Action      lib.Action
 	Description string
-	Want        map[string]bool
+	Want        []string
+	Exclude     []string
 	OnlyIPType  lib.IPType
 }
 
-func (s *stdout) GetType() string {
+func (s *Stdout) GetType() string {
 	return s.Type
 }
 
-func (s *stdout) GetAction() lib.Action {
+func (s *Stdout) GetAction() lib.Action {
 	return s.Action
 }
 
-func (s *stdout) GetDescription() string {
+func (s *Stdout) GetDescription() string {
 	return s.Description
 }
 
-func (s *stdout) Output(container lib.Container) error {
-	for entry := range container.Loop() {
-		if len(s.Want) > 0 && !s.Want[entry.GetName()] {
+func (s *Stdout) Output(container lib.Container) error {
+	for _, name := range s.filterAndSortList(container) {
+		entry, found := container.GetEntry(name)
+		if !found {
 			continue
 		}
 
@@ -83,6 +80,7 @@ func (s *stdout) Output(container lib.Container) error {
 		if err != nil {
 			continue
 		}
+
 		for _, cidr := range cidrList {
 			io.WriteString(os.Stdout, cidr+"\n")
 		}
@@ -91,7 +89,43 @@ func (s *stdout) Output(container lib.Container) error {
 	return nil
 }
 
-func (s *stdout) generateCIDRList(entry *lib.Entry) ([]string, error) {
+func (s *Stdout) filterAndSortList(container lib.Container) []string {
+	excludeMap := make(map[string]bool)
+	for _, exclude := range s.Exclude {
+		if exclude = strings.ToUpper(strings.TrimSpace(exclude)); exclude != "" {
+			excludeMap[exclude] = true
+		}
+	}
+
+	wantList := make([]string, 0, len(s.Want))
+	for _, want := range s.Want {
+		if want = strings.ToUpper(strings.TrimSpace(want)); want != "" && !excludeMap[want] {
+			wantList = append(wantList, want)
+		}
+	}
+
+	if len(wantList) > 0 {
+		// Sort the list
+		slices.Sort(wantList)
+		return wantList
+	}
+
+	list := make([]string, 0, 300)
+	for entry := range container.Loop() {
+		name := entry.GetName()
+		if excludeMap[name] {
+			continue
+		}
+		list = append(list, name)
+	}
+
+	// Sort the list
+	slices.Sort(list)
+
+	return list
+}
+
+func (s *Stdout) generateCIDRList(entry *lib.Entry) ([]string, error) {
 	var entryList []string
 	var err error
 	switch s.OnlyIPType {

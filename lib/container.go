@@ -10,6 +10,7 @@ import (
 
 type Container interface {
 	GetEntry(name string) (*Entry, bool)
+	Len() int
 	Add(entry *Entry, opts ...IgnoreIPOption) error
 	Remove(entry *Entry, rCase CaseRemove, opts ...IgnoreIPOption) error
 	Loop() <-chan *Entry
@@ -39,6 +40,13 @@ func (c *container) GetEntry(name string) (*Entry, bool) {
 		return nil, false
 	}
 	return val, true
+}
+
+func (c *container) Len() int {
+	if !c.isValid() {
+		return 0
+	}
+	return len(c.entries)
 }
 
 func (c *container) Loop() <-chan *Entry {
@@ -232,41 +240,29 @@ func (c *container) lookup(addrOrPrefix any, iptype IPType, searchList ...string
 			continue
 		}
 
+		var ipset *netipx.IPSet
+		var err error
 		switch iptype {
 		case IPv4:
-			ipset, err := entry.GetIPv4Set()
-			if err != nil {
-				return nil, false, err
-			}
-			switch addrOrPrefix := addrOrPrefix.(type) {
-			case netip.Prefix:
-				if found := ipset.ContainsPrefix(addrOrPrefix); found {
-					isfound = true
-					result = append(result, entry.GetName())
-				}
-			case netip.Addr:
-				if found := ipset.Contains(addrOrPrefix); found {
-					isfound = true
-					result = append(result, entry.GetName())
-				}
-			}
-
+			ipset, err = entry.GetIPv4Set()
 		case IPv6:
-			ipset, err := entry.GetIPv6Set()
-			if err != nil {
-				return nil, false, err
+			ipset, err = entry.GetIPv6Set()
+		}
+
+		if err != nil {
+			return nil, false, err
+		}
+
+		switch addrOrPrefix := addrOrPrefix.(type) {
+		case netip.Prefix:
+			if found := ipset.ContainsPrefix(addrOrPrefix); found {
+				isfound = true
+				result = append(result, entry.GetName())
 			}
-			switch addrOrPrefix := addrOrPrefix.(type) {
-			case netip.Prefix:
-				if found := ipset.ContainsPrefix(addrOrPrefix); found {
-					isfound = true
-					result = append(result, entry.GetName())
-				}
-			case netip.Addr:
-				if found := ipset.Contains(addrOrPrefix); found {
-					isfound = true
-					result = append(result, entry.GetName())
-				}
+		case netip.Addr:
+			if found := ipset.Contains(addrOrPrefix); found {
+				isfound = true
+				result = append(result, entry.GetName())
 			}
 		}
 	}
