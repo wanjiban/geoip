@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/lib/lib.go
+// Purpose: Auto-generated header. Core library types and interfaces.
+
 package lib
 
 const (

@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/main.go
+// Purpose: Auto-comment header added by OpenCode. Review and refine.
+
 package main
 
 import (

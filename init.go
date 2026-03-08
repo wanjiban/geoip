@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/init.go
+// Purpose: Auto-generated header. Document plugin initialization bootstrap.
+
 package main
 
 import (

@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/lib/config.go
+// Purpose: Auto-generated header. Document config registries and converters.
+
 package lib
 
 import (

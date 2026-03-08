@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/lib/entry.go
+// Purpose: Auto-generated header. Document Entry structure and helpers.
+
 package lib
 
 import (

@@ -1,3 +1,7 @@
+// OpenCode Auto-comment
+// File: /Users/f.l/Coding/geoip/lib/common.go
+// Purpose: Auto-generated header. Provide common helpers for HTTP access.
+
 package lib
 
 import (
