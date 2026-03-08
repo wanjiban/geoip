@@ -1,3 +1,5 @@
+mod config.json to reduce size of geoip.dat.form 18.9m to 0.2m
+      
       "args": {
         "outputDir": "./output",
         "outputName": "geoip.dat"
